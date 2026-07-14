@@ -1,0 +1,16 @@
+Package: omiqGTR
+Type: Package
+Title: R-OMIQ gating interoperability
+Version: 0.1.0
+Author: David Novak
+Maintainer: David Novak <davidnovak9000@gmail.com>
+Description: Allows to use a gating tree from an OMIQ workflow on any cytometry expression matrix in R.
+License: Apache License 2.0
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+Depends:
+    R (>= 3.2)
+Suggests:
+    flowCore (>= 2.14.2)
+Config/roxygen2/version: 8.0.0
