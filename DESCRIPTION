@@ -1,7 +1,7 @@
 Package: omiqGTR
 Type: Package
 Title: R-OMIQ gating interoperability
-Version: 0.1.0
+Version: 0.1.1
 Author: David Novak
 Maintainer: David Novak <davidnovak9000@gmail.com>
 Description: Allows to use a gating tree from an OMIQ workflow on any cytometry expression matrix in R.
