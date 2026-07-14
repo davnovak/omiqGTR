@@ -1000,13 +1000,13 @@ tree_paths <-
 #' each affected node.
 #'
 #' @param gt A `GatingTree` object created by `parse_omiqgt()`.
-#' @param sep Separator for the paths. Defaults to "|".
 #' @param path Full path (as returned by `tree_paths()`) to the node that
 #'             becomes the base of the extracted subtree.
+#' @param sep Separator for the paths. Defaults to "|".
 #' @return A new `GatingTree` restricted to the requested subtree.
 #' @export
 isolate_subtree <-
-  function(gt, sep = "|", path) {
+  function(gt, path, sep = "|") {
 
     m <- .model(gt)
 
@@ -1113,6 +1113,176 @@ isolate_subtree <-
       "nodes" = new_nodes,
       "containers" = m$containers[ref_ids], # prune to referenced gates
       "roots" = base_children, # already ord-sorted
+      "children" = new_children,
+      "parent_of" = new_parent_of
+    )
+    new_model$nested <- .nested_tree(new_model)
+    new_model$gates <- .build_gates(new_model)
+    new_model$order <- .node_order(new_model)
+    new_model$paths <- .node_paths(new_model, sep = sep)
+    new_model$channels <- .gate_channels(new_model)
+
+    counter <- new.env()
+    counter$n <- 0L
+    dnd <- .as_dendrogram_node(new_model$nested, counter)
+    attr(dnd, "model") <- new_model
+    class(dnd) <- c("GatingTree", "dendrogram")
+    dnd
+  }
+
+#' Remove node/subtree from a parsed OMIQ gating tree object
+#'
+#' Deletes the node at `path`. By default (`remove_subtree = FALSE`) only that
+#' single node is removed and its children are re-attached to its parent, taking
+#' the node's place among the parent's children (if the node was a root, its
+#' children become roots). With `remove_subtree = TRUE` the node and its whole
+#' subtree are removed.
+#'
+#' As in `isolate_subtree()`, any per-file gate adjustments that belonged to a
+#' gate that is no longer applied cease to be relevant: they are dropped from the
+#' returned object and a warning is emitted for each affected node.
+#'
+#' @param gt A `GatingTree` object created by `parse_omiqgt()`.
+#' @param path Full path (as returned by `tree_paths()`) to the node to remove.
+#' @param sep Separator for the paths. Defaults to "|".
+#' @param remove_subtree Also remove the node's descendants? Defaults to `FALSE`
+#'                       (the descendants are kept and re-wired to the parent).
+#' @return A new `GatingTree` object with the node/subtree removed.
+#' @export
+remove_node <-
+  function(gt, path, sep = "|", remove_subtree = FALSE) {
+
+    m <- .model(gt)
+
+    ## Resolve `path` to a node ID ----
+
+    all_paths <- .node_paths(m, sep = sep) # named by node ID
+    target <- names(all_paths)[all_paths == path]
+    if (length(target) == 0L) {
+      stop(
+        "No node matches path: ", path, "\n(see `tree_paths()` for valid paths)."
+      )
+    }
+    if (length(target) > 1L) {
+      stop("Path is ambiguous (", length(target), " nodes): ", path)
+    }
+
+    parent <- m$parent_of[[target]] # "" if `target` is a root
+    kids   <- m$children[[target]]
+
+    ## Decide which nodes to drop ----
+
+    descendants <- function(id) {
+      c(id, unlist(lapply(m$children[[id]], descendants)))
+    }
+    remove_ids <-
+      if (isTRUE(remove_subtree)) { descendants(target) } else { target }
+    keep_ids <- setdiff(names(m$nodes), remove_ids)
+    if (length(keep_ids) == 0L) {
+      stop("Removing '", path, "' would delete every node in the tree.")
+    }
+
+    ## Rebuild node relationships ----
+
+    new_nodes     <- m$nodes[keep_ids]
+    new_children  <- m$children[keep_ids]
+    new_parent_of <- m$parent_of[keep_ids]
+
+    splice <- function(lst, old, repl) { # replace `old` by `repl`, keep order
+      i <- match(old, lst)
+      before <-
+        if (i > 1L) { lst[seq_len(i - 1L)] } else { character(0) }
+      after <-
+        if (i < length(lst)) { lst[(i + 1L):length(lst)] } else { character(0) }
+      c(before, repl, after)
+    }
+
+    ## Kept children re-wired ----
+    promoted <-
+      if (isTRUE(remove_subtree)) { character(0) } else { kids }
+
+    if (nzchar(parent)) {
+      new_children[[parent]] <- splice(m$children[[parent]], target, promoted)
+      new_roots <- m$roots
+    } else {
+      new_roots <- splice(m$roots, target, promoted)
+    }
+    if (!isTRUE(remove_subtree)) { # reconnect promoted children to the parent
+      for (k in kids) {
+        new_nodes[[k]]$parentId <- parent
+        new_parent_of[[k]] <- parent
+      }
+    }
+
+    ## Recursively collect used gate containers ----
+
+    referenced <- new.env(parent = emptyenv())
+    collect <- function(cid) {
+      if (!is.null(referenced[[cid]])) {
+        return(invisible())
+      }
+      assign(cid, TRUE, envir = referenced)
+      fc <- m$containers[[cid]]
+      if (identical(fc$containerType, "CompoundFilterContainer")) {
+        for (child in unlist(fc$filterContainerIds)) {
+          collect(child)
+        }
+      }
+    }
+    for (id in keep_ids) {
+      collect(m$nodes[[id]]$filterContainerId)
+    }
+    ref_ids <- ls(referenced)
+
+    ## Warn about vanished per-file adjustments ----
+
+    has_pf <- function(fc) {
+      !is.null(fc$perFileFilters) && length(fc$perFileFilters) > 0L
+    }
+    for (cid in names(m$containers)) {
+      fc <- m$containers[[cid]]
+      if (!has_pf(fc) || cid %in% ref_ids) {
+        next
+      }
+      owners <- names(m$nodes)[
+        vapply(
+          X = m$nodes,
+          FUN = function(nd) { identical(nd$filterContainerId, cid) },
+          FUN.VALUE = logical(1)
+        )
+      ]
+      owner_lbl <-
+        if (length(owners)) {
+          paste(
+            vapply(
+              X = owners,
+              FUN = function(id) { .node_name(m, id) },
+              FUN.VALUE = character(1)
+            ),
+            collapse = ", "
+          )
+        } else {
+          cid
+        }
+      warning(
+        sprintf(
+          paste0(
+            "`remove_node()`: %d per-file gate adjustment(s) on node '%s' ",
+            "(container %s) no longer apply after removal."
+          ),
+          length(fc$perFileFilters), owner_lbl, cid
+        ),
+        call. = FALSE
+      )
+    }
+
+    ## Assemble the reduced model ----
+
+    new_model <- list(
+      "meta" = m$meta,
+      "nodes" = new_nodes,
+      "containers" = m$containers[ref_ids], # prune to referenced gates
+      "roots" = new_roots,
       "children" = new_children,
       "parent_of" = new_parent_of
     )
