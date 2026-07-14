@@ -4,7 +4,7 @@
 \alias{gate}
 \title{Apply OMIQ gates to cytometry data}
 \usage{
-gate(gt, data, omiq_id = NULL, sep = "/", ...)
+gate(gt, data, omiq_id = NULL, sep = "|", ...)
 }
 \arguments{
 \item{gt}{A \code{GatingTree} object created by \code{parse_omiqgt()} \strong{OR} path to an
@@ -17,7 +17,7 @@ named after fluorophores/channels/markers) \strong{OR} a
 \item{omiq_id}{Optional sample \emph{OmiqID} if there are any per-file gate
 adjustments. Defaults to \code{NULL} (no adjustents).}
 
-\item{sep}{Separator for the path column names. Defaults to "/".}
+\item{sep}{Separator for the path column names. Defaults to "|".}
 
 \item{...}{Additional arguments to \code{flowCore::read.FCS()} if a path to FCS
 file was given.}

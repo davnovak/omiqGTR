@@ -4,12 +4,12 @@
 \alias{tree_paths}
 \title{Extract all paths through a parsed OMIQ gating tree object}
 \usage{
-tree_paths(gt, sep = "/")
+tree_paths(gt, sep = "|")
 }
 \arguments{
 \item{gt}{A \code{GatingTree} object created by \code{parse_omiqgt()}.}
 
-\item{sep}{Separator for the paths. Defaults to "/".}
+\item{sep}{Separator for the paths. Defaults to "|".}
 }
 \value{
 A character vector of full node paths.

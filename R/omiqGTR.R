@@ -157,7 +157,7 @@
   }
 
 .node_paths <-
-  function(model, sep = "/") {
+  function(model, sep = "|") {
     
     ## Fetch full node paths recursively ----
 
@@ -868,14 +868,14 @@ plot.GatingTree <-
 #'             `flowCore::flowFrame` object **OR** path to an FCS file.
 #' @param omiq_id Optional sample *OmiqID* if there are any per-file gate
 #'                adjustments. Defaults to `NULL` (no adjustents).
-#' @param sep Separator for the path column names. Defaults to "/".
+#' @param sep Separator for the path column names. Defaults to "|".
 #' @param ... Additional arguments to `flowCore::read.FCS()` if a path to FCS
 #'            file was given.
 #' @return A logical matrix: one row per cell, one column per path through the
 #'   tree (root -> node), TRUE where the cell falls in that population. This is
 #'   analogous to `flowWorkspace::gh_pop_get_indices()`.
 #' @export
-gate <- function(gt, data, omiq_id = NULL, sep = "/", ...) {
+gate <- function(gt, data, omiq_id = NULL, sep = "|", ...) {
 
   is_single_string <- function(x) {
     is.atomic(x) && is.character(x)
@@ -976,11 +976,11 @@ gate <- function(gt, data, omiq_id = NULL, sep = "/", ...) {
 #' `omiqGTR::gate()`, provided that the same separator is used.
 #'
 #' @param gt A `GatingTree` object created by `parse_omiqgt()`.
-#' @param sep Separator for the paths. Defaults to "/".
+#' @param sep Separator for the paths. Defaults to "|".
 #' @return A character vector of full node paths.
 #' @export
 tree_paths <-
-  function(gt, sep = "/") {
+  function(gt, sep = "|") {
 
     m <- .model(gt)
     paths <- .node_paths(m, sep = sep) # named by node ID
@@ -1000,13 +1000,13 @@ tree_paths <-
 #' each affected node.
 #'
 #' @param gt A `GatingTree` object created by `parse_omiqgt()`.
-#' @param sep Separator for the paths. Defaults to "/".
+#' @param sep Separator for the paths. Defaults to "|".
 #' @param path Full path (as returned by `tree_paths()`) to the node that
 #'             becomes the base of the extracted subtree.
 #' @return A new `GatingTree` restricted to the requested subtree.
 #' @export
 isolate_subtree <-
-  function(gt, sep = "/", path) {
+  function(gt, sep = "|", path) {
 
     m <- .model(gt)
 

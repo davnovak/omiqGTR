@@ -4,12 +4,12 @@
 \alias{isolate_subtree}
 \title{Restrict an OMIQ gating tree to one subtree}
 \usage{
-isolate_subtree(gt, sep = "/", path)
+isolate_subtree(gt, sep = "|", path)
 }
 \arguments{
 \item{gt}{A \code{GatingTree} object created by \code{parse_omiqgt()}.}
 
-\item{sep}{Separator for the paths. Defaults to "/".}
+\item{sep}{Separator for the paths. Defaults to "|".}
 
 \item{path}{Full path (as returned by \code{tree_paths()}) to the node that
 becomes the base of the extracted subtree.}
