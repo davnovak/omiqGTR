@@ -3,4 +3,5 @@ export("parse_omiqgt")
 export("print.GatingTree")
 export("plot.GatingTree")
 export("gate")
-
+S3method("print", "GatingTree")
+S3method("plot", "GatingTree")
