@@ -964,7 +964,168 @@ gate <- function(gt, data, omiq_id = NULL, sep = "/", ...) {
   if (n == 1L) {
     res <- matrix(res, nrow = 1L)
   }
-  dimnames(res) <- list(rownames(data), paths[ids])
+  dimnames(res) <- list(rownames(data), unname(paths[ids]))
   attr(res, "node_id") <- ids
   res
 }
+
+#' Extract all paths through a parsed OMIQ gating tree object
+#'
+#' Returns every full, unique gate path in a `GatingTree`. These are identical
+#' to (and in the same order as) the column names of the matrix returned by
+#' `omiqGTR::gate()`, provided that the same separator is used.
+#'
+#' @param gt A `GatingTree` object created by `parse_omiqgt()`.
+#' @param sep Separator for the paths. Defaults to "/".
+#' @return A character vector of full node paths.
+#' @export
+tree_paths <-
+  function(gt, sep = "/") {
+
+    m <- .model(gt)
+    paths <- .node_paths(m, sep = sep) # named by node ID
+    unname(paths[m$order]) # gate()-column order
+  }
+
+#' Restrict an OMIQ gating tree to one subtree
+#'
+#' Extracts the subtree whose base is the node at `path`. That node takes the
+#' place of the synthetic "(ungated)" root: its own gate is dropped and its
+#' children become the new top-level populations; everything outside the subtree
+#' is removed.
+#'
+#' Any per-file gate adjustments (per-file filters) that belonged to a gate that
+#' is no longer applied in the restricted tree cease to be relevant. Such
+#' adjustments are dropped from the returned object, and a warning is emitted for
+#' each affected node.
+#'
+#' @param gt A `GatingTree` object created by `parse_omiqgt()`.
+#' @param sep Separator for the paths. Defaults to "/".
+#' @param path Full path (as returned by `tree_paths()`) to the node that
+#'             becomes the base of the extracted subtree.
+#' @return A new `GatingTree` restricted to the requested subtree.
+#' @export
+isolate_subtree <-
+  function(gt, sep = "/", path) {
+
+    m <- .model(gt)
+
+    ## Resolve `path` to a node ID ----
+
+    all_paths <- .node_paths(m, sep = sep) # named by node ID
+    base_id <- names(all_paths)[all_paths == path]
+    if (length(base_id) == 0L) {
+      stop(
+        "No node matches path: ", path, "\n(see `tree_paths()` for valid paths)."
+      )
+    }
+    if (length(base_id) > 1L) {
+      stop("Path is ambiguous (", length(base_id), " nodes): ", path)
+    }
+    base_children <- m$children[[base_id]] # these become the new roots
+    if (length(base_children) == 0L) {
+      stop("Node '", path, "' is a leaf; it has no subtree to isolate.")
+    }
+
+    ## Collect nodes to keep ----
+
+    descendants <- function(id) {
+      c(id, unlist(lapply(m$children[[id]], descendants)))
+    }
+    keep_ids <- setdiff(descendants(base_id), base_id)
+
+    ## Rebuild node relationships ----
+
+    new_nodes <- m$nodes[keep_ids]
+    new_children <- m$children[keep_ids]
+    new_parent_of <- m$parent_of[keep_ids]
+    for (r in base_children) { # detach the new roots
+      new_nodes[[r]]$parentId <- ""
+      new_parent_of[[r]] <- ""
+    }
+
+    ## Recursively collect used gate containers ----
+
+    referenced <- new.env(parent = emptyenv())
+    collect <- function(cid) {
+      if (!is.null(referenced[[cid]])) {
+        return(invisible())
+      }
+      assign(cid, TRUE, envir = referenced)
+      fc <- m$containers[[cid]]
+      if (identical(fc$containerType, "CompoundFilterContainer")) {
+        for (child in unlist(fc$filterContainerIds)) {
+          collect(child)
+        }
+      }
+    }
+    for (id in keep_ids) {
+      collect(m$nodes[[id]]$filterContainerId)
+    }
+    ref_ids <- ls(referenced)
+
+    ## Warn about vanished per-file adjustments ----
+
+    has_pf <- function(fc) {
+      !is.null(fc$perFileFilters) && length(fc$perFileFilters) > 0L
+    }
+    for (cid in names(m$containers)) {
+      fc <- m$containers[[cid]]
+      if (!has_pf(fc) || cid %in% ref_ids) {
+        next
+      }
+      owners <- names(m$nodes)[
+        vapply(
+          X = m$nodes,
+          FUN = function(nd) { identical(nd$filterContainerId, cid) },
+          FUN.VALUE = logical(1)
+        )
+      ]
+      owner_lbl <-
+        if (length(owners)) {
+          paste(
+            vapply(
+              X = owners,
+              FUN = function(id) { .node_name(m, id) },
+              FUN.VALUE = character(1)
+            ),
+            collapse = ", "
+          )
+        } else {
+          cid
+        }
+      warning(
+        sprintf(
+          paste0(
+            "`isolate_subtree()`: %d per-file gate adjustment(s) on node '%s' ",
+            "(container %s) no longer apply in the isolated subtree."
+          ),
+          length(fc$perFileFilters), owner_lbl, cid
+        ),
+        call. = FALSE
+      )
+    }
+
+    ## Assemble restricted model ----
+
+    new_model <- list(
+      "meta" = m$meta,
+      "nodes" = new_nodes,
+      "containers" = m$containers[ref_ids], # prune to referenced gates
+      "roots" = base_children, # already ord-sorted
+      "children" = new_children,
+      "parent_of" = new_parent_of
+    )
+    new_model$nested <- .nested_tree(new_model)
+    new_model$gates <- .build_gates(new_model)
+    new_model$order <- .node_order(new_model)
+    new_model$paths <- .node_paths(new_model, sep = sep)
+    new_model$channels <- .gate_channels(new_model)
+
+    counter <- new.env()
+    counter$n <- 0L
+    dnd <- .as_dendrogram_node(new_model$nested, counter)
+    attr(dnd, "model") <- new_model
+    class(dnd) <- c("GatingTree", "dendrogram")
+    dnd
+  }

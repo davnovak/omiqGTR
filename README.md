@@ -17,7 +17,7 @@ This is different from exporting cell-wise flags, and allows you to gate previou
 **Step 4**. Apply the gating to an FCS file in R: `gating_matrix <- omiqGTR::gate(gt, "path_to_fcsfile.fcs")`.
 Each row of the resulting matrix will correspond to a cell, and each (named) column to a gate.
 
-(**Step 4.**) If your gating hierarchy contains per-file adjustments, be sure to specify the FCS file's *OmiqID* using the `omiq_id` argument of `omiqGTR::gate()`.
+(**Step 5.**) If your gating hierarchy contains per-file adjustments, be sure to specify the FCS file's *OmiqID* using the `omiq_id` argument of `omiqGTR::gate()`.
 This can be found in the OMIQ Dataset metadata table (**Dataset** -> **File Metadata**).
 
 ### Troubleshooting
@@ -29,3 +29,8 @@ Check function help in R: `?parse_omiqgt`, `?print.GatingTree`, `?plot.GatingTre
 * Only rectangular and polygonal gates are currently supported.
 * I have yet to implement interoperability with `flowWorkspace`, `CytoML`, or maybe even *FlowJo*.
 If you want this, post a feature request in the *Issue* tab of this GitHub repository.
+
+### Extra functions
+
+* `omiqGTR::tree_nodes` returns all paths through the gating tree
+* `omiqGTR::isolate_subtree` lets you extract a subset of the gating hierarchy as an independent gating model
