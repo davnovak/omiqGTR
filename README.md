@@ -1,4 +1,4 @@
-# omiqgtR
+# omiqGTR
 
 This package offers **<a href="https://www.r-project.org">R</a>-<a href="https://www.omiq.ai">OMIQ</a> interoperability for gating**.
 This means that a gating tree from OMIQ can be downloaded and applied to a flow/mass cytometry expression matrix using a single `gate` function in R.
