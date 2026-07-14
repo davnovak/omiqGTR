@@ -352,7 +352,7 @@
           )
       } else if (identical(fc$containerType, "CompoundFilterContainer")) {
         
-        ## Note: only `AND` compound filters are supported now
+        ## Note: only `AND` and `NOT` compound filters for compounds supported
         
         child_ids <- unlist(fc$filterContainerIds)
         child_fns <- lapply(child_ids, make)
@@ -959,7 +959,7 @@ gate <- function(gt, data, omiq_id = NULL, sep = "/", ...) {
   }
 
   ids <- m$order
-  paths <- .node_paths(m, sep = sep, strip = FALSE)
+  paths <- .node_paths(m, sep = sep)
   res <- vapply(X = ids, FUN = cum_mem, FUN.VALUE = logical(n))
   if (n == 1L) {
     res <- matrix(res, nrow = 1L)
