@@ -10,14 +10,14 @@ This is different from exporting cell-wise flags, and allows you to gate previou
 
 **Step 1**. Download your gating hierarchy: open the **Gating** task in your OMIQ workflow and press Ctrl+Shift+D.
 
-**Step 2**. Install `omiqgtR` in your R console: `pak::pkg_install("davnovak/omiqqtR")`.
+**Step 2**. Install `omiqGTR` in your R console: `pak::pkg_install("davnovak/omiqGTR")`.
 
-**Step 3**. Import the gating tree and plot it in R: `gt <- omiqgtR::parse_omiqgt("path_to_gatingfile.omiqgt"); plot(gt)`.
+**Step 3**. Import the gating tree and plot it in R: `gt <- omiqGTR::parse_omiqgt("path_to_gatingfile.omiqgt"); plot(gt)`.
 
-**Step 4**. Apply the gating to an FCS file in R: `gating_matrix <- omiqgtR::gate(gt, "path_to_fcsfile.fcs")`.
+**Step 4**. Apply the gating to an FCS file in R: `gating_matrix <- omiqGTR::gate(gt, "path_to_fcsfile.fcs")`.
 Each row of the resulting matrix will correspond to a cell, and each (named) column to a gate.
 
-(**Step 4.**) If your gating hierarchy contains per-file adjustments, be sure to specify the FCS file's *OmiqID* using the `omiq_id` argument of `omiqgtR::gate()`.
+(**Step 4.**) If your gating hierarchy contains per-file adjustments, be sure to specify the FCS file's *OmiqID* using the `omiq_id` argument of `omiqGTR::gate()`.
 This can be found in the OMIQ Dataset metadata table (**Dataset** -> **File Metadata**).
 
 ### Troubleshooting
