@@ -13,4 +13,6 @@ Depends:
     R (>= 3.2)
 Suggests:
     flowCore (>= 2.14.2)
+Imports:
+    jsonlite (>= 2.0.0)
 Config/roxygen2/version: 8.0.0
