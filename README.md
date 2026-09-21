@@ -18,20 +18,23 @@ This is different from exporting cell-wise flags, and allows you to gate previou
 Each row of the resulting matrix will correspond to a cell, and each (named) column to a gate.
 
 (**Step 5.**) If your gating hierarchy contains per-file adjustments, be sure to specify the FCS file's *OmiqID* using the `omiq_id` argument of `omiqGTR::gate()`.
-This can be found in the OMIQ Dataset metadata table (**Dataset** -> **File Metadata**).
-
-### Troubleshooting
-
-Check function help in R: `?parse_omiqgt`, `?print.GatingTree`, `?plot.GatingTree`, and `?gate`.
-
-### Limitations
-
-* Only rectangular and polygonal gates are currently supported.
-* I have yet to implement interoperability with `flowWorkspace`, `CytoML`, or maybe even *FlowJo*.
-If you want this, post a feature request in the *Issue* tab of this GitHub repository.
+This can be found in the OMIQ Dataset metadata table (**Dataset** -> **File Metadata**) and downloaded.
 
 ### Extra functions
 
 * `omiqGTR::tree_nodes` returns all paths through the gating tree
 * `omiqGTR::isolate_subtree` lets you extract a subset of the gating hierarchy as an independent gating model
 * `omiqGTR::remove_node` lets you remove a node or entire subtree from a gating hierarchy
+
+### Troubleshooting
+
+Each *omiqGTR* function is documented: check out `?parse_omiqgt`, `?print.GatingTree`, `?plot.GatingTree`, `?gate`, ...
+
+### Limitations
+
+* **Only rectangular and polygonal gates are currently supported!** (I would recommend only using those anyway, but may implement the other types if there is demand for this.)
+* I have yet to implement interoperability with `flowWorkspace`, `CytoML`, or maybe even *FlowJo*.
+
+Do you want *omiqGTR* to support non-polygonal gates or have extended compatibility with the mentioned frameworks?
+Please post your **feature requests** in the *Issues* tab of this GitHub repository.
+
