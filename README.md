@@ -22,7 +22,7 @@ This can be found in the OMIQ Dataset metadata table (**Dataset** -> **File Meta
 
 ### Extra functions
 
-* `omiqGTR::tree_nodes` returns all paths through the gating tree
+* `omiqGTR::tree_paths` returns all paths through the gating tree
 * `omiqGTR::isolate_subtree` lets you extract a subset of the gating hierarchy as an independent gating model
 * `omiqGTR::remove_node` lets you remove a node or entire subtree from a gating hierarchy
 
